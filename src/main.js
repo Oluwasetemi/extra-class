@@ -1,7 +1,5 @@
 import './style.css'
-import javascriptLogo from './javascript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.js'
+
 
 const BASE_URL = 'https://api.oluwasetemi.dev'
 
@@ -27,12 +25,12 @@ paginationButtons.innerHTML = `
   <span class="pagination-page-number" id="page-number">loading...</span>
   <button class="pagination-button next-button" id="next-button">Next</button>
 `;
-app.appendChild(paginationButtons);
 
-// page number span
-const pageNumberSpan = document.querySelector('.pagination-page-number');
-const prevButton = document.querySelector('.prev-button');
-const nextButton = document.querySelector('.next-button');
+async function fetchProduct(page) {
+  const response = await fetch(`${BASE_URL}/products?limit=20&page=${page}`);
+  return await response.json();
+}
+
 
 fetch(`${BASE_URL}/products?limit=20`)
   .then(response => response.json())
@@ -41,9 +39,29 @@ fetch(`${BASE_URL}/products?limit=20`)
     totalPages = data.meta.totalPages;
     hasNextPage = data.meta.hasNextPage;
     hasPreviousPage = data.meta.hasPreviousPage;
+    
+    app.appendChild(paginationButtons);
+
+  // page number span
+  const pageNumberSpan = document.querySelector('.pagination-page-number');
+  const prevButton = document.querySelector('.prev-button');
+  const nextButton = document.querySelector('.next-button');
 
     if (hasNextPage) {
-      // next button
+      // click next button
+      nextButton.onclick = async function() {
+        currentPage += 1
+        const result = await fetchProduct(currentPage)
+        // process the result
+        console.log(result)
+        productDisplay(result)
+        updatePaginationData(currentPage, totalPages, pageNumberSpan)
+        if (currentPage >= 2) {
+          prevButton.disabled = false;
+          prevButton.classList.remove('disabled');
+        }
+      }
+      
     } else {
       // next button disabled
       nextButton.disabled = true;
@@ -59,25 +77,44 @@ fetch(`${BASE_URL}/products?limit=20`)
     }
 
     pageNumberSpan.textContent = `${currentPage} of ${totalPages}`;
-    data.data.forEach(product => {
-      product.images = typeof product.images === 'string' ? JSON.parse(product.images) : product.images
-      product.finalImage = product.images[0] || product.image;
-
-      // image element
-      const imageElement = document.createElement('img');
-      imageElement.src = product.finalImage;
-      imageElement.alt = product.name;
-      imageElement.classList.add('product-image');
-
-      const productItem = document.createElement('div');
-      productItem.classList.add('product-item');
-      productItem.appendChild(imageElement);
-      productItem.appendChild(document.createTextNode(product.name));
-      productList.appendChild(productItem);
-    })
+    // a function to create the product and image
+    productDisplay(data)
     productDiv.textContent = '';
     productDiv.appendChild(productList);
   })
   .catch(error => {
     console.error('Error:', error)
+    productDiv.textContent = 'Error, Failed to fetch products';
   })
+
+function productDisplay(data) {
+  data.data.forEach(product => {
+    console.log(product.images)
+    try {
+      product.images = typeof product.images === 'string' ? JSON.parse(product.images) : product.images
+    }
+    catch(err) {
+      product.image = ''
+    }
+    product.finalImage = product.images[0] || product.image;
+
+    // image element
+    const imageElement = document.createElement('img');
+    imageElement.src = product.finalImage;
+    imageElement.alt = product.name;
+    imageElement.classList.add('product-image');
+
+    const productItem = document.createElement('div');
+    productItem.classList.add('product-item');
+    productItem.appendChild(imageElement);
+    productItem.appendChild(document.createTextNode(product.name));
+    productList.appendChild(productItem);
+  })
+
+  return productList
+}
+
+function updatePaginationData(currentPage, totalPages, pageNumberSpan) {
+  // const pageNumberSpan = document.querySelector('.pagination-page-number');
+  pageNumberSpan.textContent = `${currentPage} of ${totalPages}`;
+}
