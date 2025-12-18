@@ -1,14 +1,25 @@
 import "./style.css";
 import { fetchProducts } from "./services/productApi.js";
-import { createProductListContainer, renderProducts, showLoading, showError, showProducts, } from "./components/ProductList.js";
-import { createPaginationButtons, updatePageNumber, updateButtonStates, setupPaginationHandlers, } from "./components/Pagination.js";
+import {
+  createProductListContainer,
+  renderProducts,
+  showLoading,
+  showError,
+  showProducts,
+} from "./components/ProductList.js";
+import {
+  createPaginationButtons,
+  updatePageNumber,
+  updateButtonStates,
+  setupPaginationHandlers,
+} from "./components/Pagination.js";
 import { appState } from "./utils/state.js";
 
 // Get app container
 const app = document.querySelector("#app");
 
 // Create UI elements
-const [ productDiv, productList ] = createProductListContainer();
+const [productDiv, productList] = createProductListContainer();
 const paginationButtons = createPaginationButtons();
 
 // Append elements to DOM
@@ -31,8 +42,17 @@ async function loadProducts(page) {
     renderProducts(appState.getProducts(), productList);
     showProducts(productDiv, productList);
 
+    // Calculate total items from metadata
+    const totalItems =
+      data.meta?.total || appState.getTotalPages() * appState.limit;
+
     // Update pagination UI
-    updatePageNumber(appState.getCurrentPage(), appState.getTotalPages());
+    updatePageNumber(
+      appState.getCurrentPage(),
+      appState.getTotalPages(),
+      appState.limit,
+      totalItems,
+    );
     updateButtonStates(
       appState.getHasNextPage(),
       appState.getHasPreviousPage(),
@@ -60,6 +80,14 @@ async function handlePreviousPage() {
 }
 
 /**
+ * Handle page number button click
+ * @param {number} page - Page number to load
+ */
+async function handlePageClick(page) {
+  await loadProducts(page);
+}
+
+/**
  * Initialize the application
  */
 async function init() {
@@ -67,7 +95,7 @@ async function init() {
   app.appendChild(paginationButtons);
 
   // Setup pagination event handlers
-  setupPaginationHandlers(handleNextPage, handlePreviousPage);
+  setupPaginationHandlers(handleNextPage, handlePreviousPage, handlePageClick);
 
   // Load initial products
   await loadProducts(appState.getCurrentPage());
