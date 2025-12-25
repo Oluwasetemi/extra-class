@@ -9,6 +9,7 @@ const app = document.querySelector("#app");
 
 // Create UI elements
 const [ productDiv, productList ] = createProductListContainer();
+console.log(productDiv)
 const paginationButtons = createPaginationButtons();
 
 // Append elements to DOM
@@ -30,9 +31,11 @@ async function loadProducts(page) {
     // Render products
     renderProducts(appState.getProducts(), productList);
     showProducts(productDiv, productList);
+    
+    const totalItems = data.meta?.total || appState.getTotalPages() * appState.limit;
 
     // Update pagination UI
-    updatePageNumber(appState.getCurrentPage(), appState.getTotalPages());
+    updatePageNumber(appState.getCurrentPage(), appState.getTotalPages(), appState.limit, totalItems);
     updateButtonStates(
       appState.getHasNextPage(),
       appState.getHasPreviousPage(),
@@ -59,6 +62,11 @@ async function handlePreviousPage() {
   await loadProducts(appState.getCurrentPage());
 }
 
+async function handlePageClick(page) {
+  await loadProducts(page)
+}
+
+
 /**
  * Initialize the application
  */
@@ -67,7 +75,7 @@ async function init() {
   app.appendChild(paginationButtons);
 
   // Setup pagination event handlers
-  setupPaginationHandlers(handleNextPage, handlePreviousPage);
+  setupPaginationHandlers(handleNextPage, handlePreviousPage, handlePageClick);
 
   // Load initial products
   await loadProducts(appState.getCurrentPage());

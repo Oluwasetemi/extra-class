@@ -1,3 +1,5 @@
+import { mk } from "../utils/helper";
+
 /**
  * Parse product images from string or array format
  * @param {string|Array} images - Product images data
@@ -22,6 +24,7 @@ function createProductImage(src, alt) {
   const imageElement = document.createElement("img");
   imageElement.src = src;
   imageElement.alt = alt;
+  imageElement.loading = "lazy";
   imageElement.classList.add("product-image");
   return imageElement;
 }
@@ -32,15 +35,35 @@ function createProductImage(src, alt) {
  * @returns {HTMLDivElement} Product item element
  */
 function createProductItem(product) {
+  let productName;
   const images = parseProductImages(product.images);
-  const finalImage = images[0] || product.image || "";
+  const finalImage = images[0] || product.image || "https://placehold.net/default.png";
 
-  const imageElement = createProductImage(finalImage, product.name);
 
-  const productItem = document.createElement("div");
+  const productItem = document.createElement("li");
   productItem.classList.add("product-item");
-  productItem.appendChild(imageElement);
-  productItem.appendChild(document.createTextNode(product.name));
+  
+  const link = document.createElement('a');
+  link.href = "#"
+  link.classList.add('product-item-link');
+  
+  const imageWrapper = document.createElement('div');
+  imageWrapper.classList.add("product-image-wrapper");
+  
+  const imageElement = createProductImage(finalImage, product.name);
+  imageWrapper.appendChild(imageElement);
+  
+  const productDetailContainer = mk('div', {className: "product-details"}, [
+    mk("div", {className: "product-info"}, [
+      (productName = mk("h3", {className: "product-name", textContent: `${product.name}`})),
+      product?.description ? mk("p", {className: "product-description"}, [product.description]) : '',
+    ]),
+    product?.price ? mk("p", {className: "product-price"}, [`$${product.price}`]) : ''
+  ])
+  
+  link.appendChild(imageWrapper);
+  link.appendChild(productDetailContainer);
+  productItem.appendChild(link)
 
   return productItem;
 }
@@ -65,40 +88,70 @@ export function renderProducts(products, productListElement) {
  * @returns {Object} Container elements
  */
 export function createProductListContainer() {
-  const productDiv = document.createElement("div");
-  productDiv.textContent = "loading...";
+  // container 
+  const container = document.createElement("div");
+  container.classList.add("product-list-container");
+  
+  // wrapper
+  const wrapper = document.createElement("div");
+  wrapper.classList.add("product-list-wrapper");
+  
+  const title = document.createElement("h2");
+  title.classList.add("product-list-title");
+  title.textContent = "Products";
+
 
   const productList = document.createElement("ul");
+  productList.classList.add("product-grid");
+  
+  wrapper.appendChild(title);
+  wrapper.appendChild(productList);
+  container.appendChild(wrapper);
 
-  return [ productDiv, productList ];
+  return [ container, productList ];
 }
 
 /**
  * Show loading state
- * @param {HTMLDivElement} productDiv - Product container div
+ * @param {HTMLDivElement} container - Product container div
  */
-export function showLoading(productDiv) {
-  productDiv.textContent = "loading...";
+export function showLoading(container) {
+  const wrapper = container.querySelector('.wrapper');
+  if (wrapper) {
+    wrapper.innerHTML = `<div>loading...</div>`
+  }
 }
 
 /**
  * Show error state
- * @param {HTMLDivElement} productDiv - Product container div
+ * @param {HTMLDivElement} container - Product container div
  * @param {string} message - Error message
  */
 export function showError(
-  productDiv,
+  container,
   message = "Error, Failed to fetch products",
 ) {
-  productDiv.textContent = message;
+  const wrapper = container.querySelector('.wrapper');
+  if (wrapper) {
+    wrapper.innerHTML = `<div>${message}</div>`
+  }
 }
 
 /**
  * Show products
- * @param {HTMLDivElement} productDiv - Product container div
+ * @param {HTMLDivElement} container - Product container div
  * @param {HTMLUListElement} productList - Product list UL element
  */
-export function showProducts(productDiv, productList) {
-  productDiv.textContent = "";
-  productDiv.appendChild(productList);
+export function showProducts(container, productList) {
+  const wrapper = container.querySelector('.wrapper');
+  if (wrapper) {
+    wrapper.innerHTML = ""
+    
+    const title = document.createElement("h2");
+    title.classList.add("product-list-title");
+    title.textContent = "Products";
+    
+    wrapper.appendChild(title);
+    wrapper.appendChild(productList)
+  }
 }
